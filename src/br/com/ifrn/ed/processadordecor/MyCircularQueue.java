@@ -1,48 +1,101 @@
 package br.com.ifrn.ed.processadordecor;
 
-import java.util.LinkedList;
+import java.util.NoSuchElementException;
 
-public class MyCircularQueue {
+/**
+ * 
+ * @author Herlan & Sávio
+ * Classe responsávio pela fila circular.
+ */
+public class MyCircularQueue implements Queue {
 
-    private LinkedList<Cor> cores;
-    private Cor cor;
+    private NodeQueue<Cor> first;//primeiro nó
+    private NodeQueue<Cor> last;//último nó
+    private int size;//tamanho
 
     public MyCircularQueue() {
-        cores = new LinkedList();        
+        first = null;
+        last = null;
+        size = 0;
     }
 
+    @Override
+    public int size() {
+        return this.size;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return first == null && last == null;
+    }
+
+    @Override
     public void enqueue(Cor cor) {
-        cores.add(cor);
+        NodeQueue<Cor> newNode = new NodeQueue<Cor>(cor);//aloca um novo nó
+
+        if (isEmpty()) {
+            /*Caso a fila seja vazia o primeoro nó será igual ao último e o ultimo vai apontar para o primeiro*/
+            first = last = newNode;
+            last.setProxNode(first);
+        } else {
+            /*Caso a fila já possua elementos o novo elemento adicionado vai apontar para o primeiro e ele será o ultimo*/
+            newNode.setProxNode(first);
+            last.setProxNode(newNode);
+            last = newNode;
+        }
+        size++;
     }
 
-    public void enqueue(int tempo, String cor, int prioridade) {
-        Cor novaCor = new Cor(tempo, cor, prioridade);
-        cores.add(novaCor);
-    }
-
+    @Override
     public Cor dequeue() {
-        Cor cor = cores.removeFirst();        
+        Cor cor;
+
+        if (isEmpty()) {
+            throw new NoSuchElementException("Queue underflow");
+        } else if (first == last) {
+            /*Caso exista apenas um único elemento o primeiro e o último serão nulos após a remoção*/
+            cor = first.getElement();
+            first = last = null;
+        } else {
+            /*Caso exista mais de um elemento só basta mover a referência do primeiro e redicionar o apontador do ultimo*/
+            cor = first.getElement();
+            first = first.getProxNode();
+            last.setProxNode(first);
+        }
+
+        size--;
+
         return cor;
     }
 
-    public Cor firstElement() {
-        return cores.getFirst();
+    @Override
+    public Cor peek() {
+        return first.getElement();
     }
 
-    public boolean isEmpty() {
-        return cores.isEmpty();
+    public NodeQueue node() {
+        if (isEmpty()) {
+            throw new NoSuchElementException("Queue underflow");
+        }
+
+        return first;
     }
 
     public String listarFila() {
         String result = "";
+        NodeQueue<Cor> nodeQueue = first;
 
-        for (int i = 0; i < cores.size(); i++) {
+        for (int i = 0; i < size; i++) {
+            Cor cor = nodeQueue.getElement();
             if (i < 1) {
-                result += "[" + cores.get(i).getCor() + " | " + cores.get(i).getPrioridade() + " | " + cores.get(i).getTempo() + "s ]";
+                result += cor;
             } else {
-                result += " + [" + cores.get(i).getCor() + " | " + cores.get(i).getPrioridade() + " | " + cores.get(i).getTempo() + "s ]";
+                result += " + " + cor;
             }
+
+            nodeQueue = nodeQueue.getProxNode();
         }
         return result;
     }
+
 }

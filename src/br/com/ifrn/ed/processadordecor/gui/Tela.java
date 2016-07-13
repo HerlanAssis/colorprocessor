@@ -1,7 +1,9 @@
 package br.com.ifrn.ed.processadordecor.gui;
 
 import br.com.ifrn.ed.processadordecor.Cor;
+import br.com.ifrn.ed.processadordecor.MyCircularQueue;
 import br.com.ifrn.ed.processadordecor.MySequentialQueue;
+import br.com.ifrn.ed.processadordecor.NodeQueue;
 import br.com.ifrn.ed.processadordecor.utils.Cores;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
@@ -10,15 +12,19 @@ import javax.swing.Timer;
 
 public class Tela extends javax.swing.JFrame {
 
-    private MySequentialQueue cores;
-    private MySequentialQueue processAux;
+    private MySequentialQueue mySeqQueue;
+    private MyCircularQueue myCircularQueue;
+    private boolean process = true;
+
+    NodeQueue<Cor> nodeQueue;
     private Cor cor;
     private Timer timer;
     private int count = 0;
 
     public Tela() {
         initComponents();
-        cores = new MySequentialQueue();
+        mySeqQueue = new MySequentialQueue();
+        myCircularQueue = new MyCircularQueue();
         radioSequencial.setSelected(true);
     }
 
@@ -48,6 +54,7 @@ public class Tela extends javax.swing.JFrame {
         TextoTempoDecorrido = new javax.swing.JTextField();
         botaoIniciarProcesso = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
+        botaoPararProcesso = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setBackground(java.awt.Color.darkGray);
@@ -223,11 +230,21 @@ public class Tela extends javax.swing.JFrame {
                 botaoIniciarProcessoActionPerformed(evt);
             }
         });
-        getContentPane().add(botaoIniciarProcesso, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 550, 130, 60));
+        getContentPane().add(botaoIniciarProcesso, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 540, 90, 30));
 
         jLabel1.setFont(new java.awt.Font("Ubuntu", 1, 36)); // NOI18N
         jLabel1.setText("Processador de Cor");
         getContentPane().add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 20, -1, -1));
+
+        botaoPararProcesso.setFont(new java.awt.Font("Ubuntu", 1, 18)); // NOI18N
+        botaoPararProcesso.setForeground(java.awt.Color.green);
+        botaoPararProcesso.setText("Parar");
+        botaoPararProcesso.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                botaoPararProcessoActionPerformed(evt);
+            }
+        });
+        getContentPane().add(botaoPararProcesso, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 580, 90, 30));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -248,54 +265,72 @@ public class Tela extends javax.swing.JFrame {
         int prioridade = comboBoxPrioridade.getItemCount() - comboBoxPrioridade.getSelectedIndex();
         Cor novaCor = new Cor(tempo, cor, prioridade);
         //
-        processAux = new MySequentialQueue();
-        while (!cores.isEmpty() && cores.firstElement().getPrioridade() >= novaCor.getPrioridade()) {
-            processAux.enqueue(cores.dequeue());
+
+        if (radioCircular.isSelected()) {
+            circularQueue(novaCor);
+        } else {
+            sequentialQueue(novaCor);
         }
-        
-        processAux.enqueue(novaCor);
-        while (!cores.isEmpty()) {
-            processAux.enqueue(cores.dequeue());
-        }
-        
-        while(!processAux.isEmpty()){
-            cores.enqueue(processAux.dequeue());
-        }
-                                
-        listaProcesso.setText(cores.listarFila());
-        
+
     }//GEN-LAST:event_BotaoAddProcessoActionPerformed
 
     private void botaoIniciarProcessoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_botaoIniciarProcessoActionPerformed
-        
+        process = true;
         
         if (radioSequencial.isSelected()) {
-            cor = cores.dequeue();
+            cor = mySeqQueue.dequeue();
             setColors();
 
             timer = new Timer(1000, new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     if (count >= cor.getTempo()) {
-                        if (cores.isEmpty()) {
+                        if (mySeqQueue.isEmpty()) {
                             timer.stop();
                         } else {
-                            cor = cores.dequeue();
+                            cor = mySeqQueue.dequeue();
                             count = 0;
                         }
                     }
                     setColors();
-                    listaProcesso.setText(cores.listarFila());
+                    listaProcesso.setText(mySeqQueue.listarFila());
                     TextoTempoDecorrido.setText(cor.getTempo() - count + "s");
                     count++;
                 }
             });
             timer.setInitialDelay(0);
             timer.start();
-        }else{
-            System.out.println("Circular marcado!");
+        } else {
+            nodeQueue = myCircularQueue.node();
+            cor = nodeQueue.getElement();
+            setColors();
+
+            timer = new Timer(1000, new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    if (count >= cor.getTempo()) {
+                        if (myCircularQueue.isEmpty() || !process) {
+                            timer.stop();
+                        } else {
+                            nodeQueue = nodeQueue.getProxNode();
+                            cor = nodeQueue.getElement();
+                            count = 0;
+                        }
+                    }
+                    setColors();
+                    listaProcesso.setText(myCircularQueue.listarFila());
+                    TextoTempoDecorrido.setText(cor.getTempo() - count + "s");
+                    count++;
+                }
+            });
+            timer.setInitialDelay(0);
+            timer.start();
         }
     }//GEN-LAST:event_botaoIniciarProcessoActionPerformed
+
+    private void botaoPararProcessoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_botaoPararProcessoActionPerformed
+        process = false;
+    }//GEN-LAST:event_botaoPararProcessoActionPerformed
 
     private void setColors() {
         TextoDoNomeDaCor.setText(cor.getCor());
@@ -321,6 +356,42 @@ public class Tela extends javax.swing.JFrame {
         }
     }
 
+    public void sequentialQueue(Cor newColor) {
+        MySequentialQueue queueAux = new MySequentialQueue();
+        while (!mySeqQueue.isEmpty() && mySeqQueue.peek().getPrioridade() >= newColor.getPrioridade()) {
+            queueAux.enqueue(mySeqQueue.dequeue());
+        }
+
+        queueAux.enqueue(newColor);
+        while (!mySeqQueue.isEmpty()) {
+            queueAux.enqueue(mySeqQueue.dequeue());
+        }
+
+        while (!queueAux.isEmpty()) {
+            mySeqQueue.enqueue(queueAux.dequeue());
+        }
+
+        listaProcesso.setText(mySeqQueue.listarFila());
+    }
+
+    public void circularQueue(Cor newColor) {
+        MyCircularQueue queueAux = new MyCircularQueue();
+        while (!myCircularQueue.isEmpty() && myCircularQueue.peek().getPrioridade() >= newColor.getPrioridade()) {
+            queueAux.enqueue(myCircularQueue.dequeue());
+        }
+
+        queueAux.enqueue(newColor);
+        while (!myCircularQueue.isEmpty()) {
+            queueAux.enqueue(myCircularQueue.dequeue());
+        }
+
+        while (!queueAux.isEmpty()) {
+            myCircularQueue.enqueue(queueAux.dequeue());
+        }
+
+        listaProcesso.setText(myCircularQueue.listarFila());
+    }
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton BotaoAddProcesso;
     private javax.swing.JComboBox<String> ComboBoxCor;
@@ -333,6 +404,7 @@ public class Tela extends javax.swing.JFrame {
     private javax.swing.JTextField TextoDoNomeDaCor;
     private javax.swing.JTextField TextoTempoDecorrido;
     private javax.swing.JButton botaoIniciarProcesso;
+    private javax.swing.JButton botaoPararProcesso;
     private javax.swing.JComboBox<String> comboBoxPrioridade;
     private javax.swing.ButtonGroup filaTipo;
     private javax.swing.JLabel jLabel1;

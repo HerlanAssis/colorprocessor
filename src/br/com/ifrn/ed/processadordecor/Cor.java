@@ -1,5 +1,10 @@
 package br.com.ifrn.ed.processadordecor;
 
+/**
+ * 
+ * @author Herlan && Sávio
+ * Classe informação do nó da fila sequencia ou circular;
+ */
 public class Cor {
 
     private int tempo;
@@ -23,4 +28,10 @@ public class Cor {
     public int getPrioridade(){
         return prioridade;
     }
+    
+    @Override
+    public String toString() {
+        return "[ " + getCor() + " | " + getPrioridade() + " | " + getTempo() + "s ]";
+    }
+    
 }

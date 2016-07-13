@@ -1,3 +1,5 @@
+package br.com.ifrn.ed.processadordecor;
+
 public class NodeQueue<T> {
     private T element;
     private NodeQueue proxNode;
@@ -10,7 +12,7 @@ public class NodeQueue<T> {
     public NodeQueue (T element, T proxNode){
         this.element = element;
         this.proxNode = (NodeQueue) proxNode;
-    }
+    }    
 
     public T getElement() {
         return element;
